@@ -2,7 +2,7 @@ from datetime import datetime
 import random
 import string
 from pathlib import Path
-from typing import Dict
+from typing import Dict, List
 
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Query
@@ -72,6 +72,13 @@ class ChoiceIntentResponse(BaseModel):
     intent_id: str
 
 
+class ChoiceIntentRecord(BaseModel):
+    intent_id: str
+    external_trip_id: str
+    reduction_pct: float
+    created_at: str
+
+
 @app.get("/health")
 def health() -> Dict[str, str]:
     return {"status": "ok"}
@@ -101,6 +108,11 @@ def create_choice_intent(payload: ChoiceIntentRequest):
         "created_at": datetime.utcnow().isoformat() + "Z",
     }
     return {"intent_id": intent_id}
+
+
+@app.get("/api/v1/admin/choice-intents", response_model=List[ChoiceIntentRecord])
+def list_choice_intents():
+    return sorted(INTENT_STORE.values(), key=lambda intent: intent["created_at"], reverse=True)
 
 
 @app.get("/widget.js")
