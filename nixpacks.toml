@@ -3,6 +3,8 @@ nixPkgs = ["python312", "nodejs_20"]
 
 [phases.build]
 cmds = [
+  "python -m ensurepip --upgrade",
+  "python -m pip install --upgrade pip setuptools wheel",
   "python -m pip install -r backend/requirements.txt",
   "npm ci --prefix widget",
   "npm run build --prefix widget"
