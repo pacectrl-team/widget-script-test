@@ -1,0 +1,44 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+.env
+.env.*
+venv/
+.venv/
+ENV/
+env/
+
+# Packaging / tooling
+*.egg-info/
+.build/
+.eggs/
+dist/
+build/
+*.log
+
+# Coverage
+htmlcov/
+.coverage*
+.pytest_cache/
+
+# Node / TypeScript
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.docusaurus/
+
+# IDE / editor
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Temporary / misc
+*.tmp
+*.swp
+*.swo
