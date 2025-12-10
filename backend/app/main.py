@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 import random
 import string
 from pathlib import Path
@@ -51,7 +51,7 @@ TRIP_CONFIGS: Dict[str, Dict] = {
             "font_family": """'Trebuchet MS', 'Segoe UI', system-ui""",
             "primary_color": "#2563eb",  # blue variant
             "danger_color": "#e11d48",   # rose
-            "bg_color": "#b8dcff",       # light slate
+            "bg_color": "#5efa73",       # light slate
             "text_color": "#420003",
             "radius_px": 0,
         },
@@ -123,6 +123,7 @@ def get_widget_config(external_trip_id: str = Query(..., alias="external_trip_id
 
 @app.post("/api/v1/public/choice-intents", response_model=ChoiceIntentResponse)
 def create_choice_intent(payload: ChoiceIntentRequest):
+    _prune_old_intents()
     _get_trip_config(payload.external_trip_id)
 
     max_reduction = float(TRIP_CONFIGS[payload.external_trip_id]["max_reduction_pct"])
@@ -190,3 +191,19 @@ def _get_trip_config(external_trip_id: str) -> Dict:
     if not trip:
         raise HTTPException(status_code=404, detail="Trip not found")
     return trip
+
+
+def _prune_old_intents(max_age_minutes: int = 15) -> None:
+    cutoff = datetime.now(timezone.utc) - timedelta(minutes=max_age_minutes)
+    stale_keys = []
+    for key, intent in INTENT_STORE.items():
+        ts = intent.get("created_at")
+        try:
+            created_at = datetime.fromisoformat(ts.replace("Z", "+00:00")) if ts else None
+        except Exception:
+            created_at = None
+        if created_at and created_at < cutoff:
+            stale_keys.append(key)
+
+    for key in stale_keys:
+        INTENT_STORE.pop(key, None)
