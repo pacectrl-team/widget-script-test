@@ -19,7 +19,7 @@ load_dotenv()
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
-    allow_credentials=False,
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -179,24 +179,15 @@ def serve_widget_js():
     return FileResponse(widget_path, media_type="application/javascript")
 
 
-@app.get("/widget.js.map")
-def serve_widget_js_map():
-    map_path = _resolve_widget_path(with_map=True)
-    if not map_path.exists():
-        raise HTTPException(status_code=404, detail="widget.js.map not built yet")
-    return FileResponse(map_path, media_type="application/json")
-
-
 def _generate_intent_id(length: int = 6) -> str:
     suffix = "".join(random.choices(string.ascii_uppercase + string.digits, k=length))
     return f"int_{suffix}"
 
 
-def _resolve_widget_path(with_map: bool = False) -> Path:
+def _resolve_widget_path() -> Path:
     # backend/app/main.py -> backend -> widget-script-test -> widget/dist/widget.js
     root_dir = Path(__file__).resolve().parents[2]
-    filename = "widget.js.map" if with_map else "widget.js"
-    return root_dir / "widget" / "dist" / filename
+    return root_dir / "widget" / "dist" / "widget.js"
 
 
 def _get_trip_config(external_trip_id: str) -> Dict:
