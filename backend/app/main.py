@@ -110,6 +110,12 @@ class ChoiceConfirmationRecord(BaseModel):
     confirmed_at: str
 
 
+class TripAverageResponse(BaseModel):
+    external_trip_id: str
+    count: int
+    average_reduction_pct: float
+
+
 @app.get("/health")
 def health() -> Dict[str, str]:
     return {"status": "ok"}
@@ -165,6 +171,19 @@ def list_choice_intents():
 @app.get("/api/v1/admin/choice-confirmations", response_model=List[ChoiceConfirmationRecord])
 def list_choice_confirmations():
     return sorted(CONFIRMED_CHOICES, key=lambda record: record["confirmed_at"], reverse=True)
+
+
+@app.get("/api/v1/admin/trip-average", response_model=TripAverageResponse)
+def get_trip_average(external_trip_id: str = Query(..., alias="external_trip_id")):
+    _get_trip_config(external_trip_id)
+    trip_choices = [c for c in CONFIRMED_CHOICES if c["external_trip_id"] == external_trip_id]
+    count = len(trip_choices)
+    avg = sum(c["reduction_pct"] for c in trip_choices) / count if count else 0.0
+    return {
+        "external_trip_id": external_trip_id,
+        "count": count,
+        "average_reduction_pct": round(avg, 3),
+    }
 
 
 @app.get("/widget.js")

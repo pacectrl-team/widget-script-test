@@ -25,6 +25,7 @@ Key endpoints:
 - `GET /api/v1/admin/choice-intents` – lists all intents stored in memory (testing only, cleared on restart)
 - `POST /api/v1/public/choice-confirmations` with `{ booking_id, intent_id }` – moves an intent to the confirmed list
 - `GET /api/v1/admin/choice-confirmations` – lists confirmed choices (testing only)
+- `GET /api/v1/admin/trip-average?external_trip_id=...` – returns count and average reduction_pct for confirmed choices of the trip
 - `GET /widget.js` – serves the built widget bundle from `widget/dist/widget.js`
 
 CORS is fully open to allow embedding from external origins.
