@@ -23,6 +23,8 @@ Key endpoints:
 - `GET /api/v1/public/widget/config?external_trip_id=HEL-TLL-2025-12-12` – returns static trip config + theme
 - `POST /api/v1/public/choice-intents` with `{ external_trip_id, reduction_pct }` – validates bounds, stores intent in memory, returns `{ intent_id }`
 - `GET /api/v1/admin/choice-intents` – lists all intents stored in memory (testing only, cleared on restart)
+- `POST /api/v1/public/choice-confirmations` with `{ booking_id, intent_id }` – moves an intent to the confirmed list
+- `GET /api/v1/admin/choice-confirmations` – lists confirmed choices (testing only)
 - `GET /widget.js` – serves the built widget bundle from `widget/dist/widget.js`
 
 CORS is fully open to allow embedding from external origins.

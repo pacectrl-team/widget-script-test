@@ -43,6 +43,7 @@ TRIP_CONFIG = {
 
 # In-memory store for choice intents. Suitable for testing only.
 INTENT_STORE: Dict[str, Dict] = {}
+CONFIRMED_CHOICES: List[Dict] = []
 
 
 class ThemeConfig(BaseModel):
@@ -79,6 +80,19 @@ class ChoiceIntentRecord(BaseModel):
     created_at: str
 
 
+class ChoiceConfirmationRequest(BaseModel):
+    booking_id: int = Field(..., description="Booking identifier from host app")
+    intent_id: str = Field(..., description="Previously created intent id")
+
+
+class ChoiceConfirmationRecord(BaseModel):
+    booking_id: int
+    intent_id: str
+    external_trip_id: str
+    reduction_pct: float
+    confirmed_at: str
+
+
 @app.get("/health")
 def health() -> Dict[str, str]:
     return {"status": "ok"}
@@ -110,9 +124,31 @@ def create_choice_intent(payload: ChoiceIntentRequest):
     return {"intent_id": intent_id}
 
 
+@app.post("/api/v1/public/choice-confirmations", response_model=ChoiceConfirmationRecord)
+def confirm_choice(payload: ChoiceConfirmationRequest):
+    intent = INTENT_STORE.pop(payload.intent_id, None)
+    if not intent:
+        raise HTTPException(status_code=404, detail="Intent not found")
+
+    record = {
+        "booking_id": payload.booking_id,
+        "intent_id": intent["intent_id"],
+        "external_trip_id": intent["external_trip_id"],
+        "reduction_pct": intent["reduction_pct"],
+        "confirmed_at": datetime.utcnow().isoformat() + "Z",
+    }
+    CONFIRMED_CHOICES.append(record)
+    return record
+
+
 @app.get("/api/v1/admin/choice-intents", response_model=List[ChoiceIntentRecord])
 def list_choice_intents():
     return sorted(INTENT_STORE.values(), key=lambda intent: intent["created_at"], reverse=True)
+
+
+@app.get("/api/v1/admin/choice-confirmations", response_model=List[ChoiceConfirmationRecord])
+def list_choice_confirmations():
+    return sorted(CONFIRMED_CHOICES, key=lambda record: record["confirmed_at"], reverse=True)
 
 
 @app.get("/widget.js")
