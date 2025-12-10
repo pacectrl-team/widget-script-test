@@ -20,7 +20,7 @@ uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 
 Key endpoints:
 - `GET /health` – service check
-- `GET /api/v1/public/widget/config?external_trip_id=HEL-TLL-2025-12-12` – returns static trip config + theme
+- `GET /api/v1/public/widget/config?external_trip_id=HEL-TLL-2025-12-12` – returns static trip config + theme (multiple trips supported; see `TRIP_CONFIGS` in `backend/app/main.py`)
 - `POST /api/v1/public/choice-intents` with `{ external_trip_id, reduction_pct }` – validates bounds, stores intent in memory, returns `{ intent_id }`
 - `GET /api/v1/admin/choice-intents` – lists all intents stored in memory (testing only, cleared on restart)
 - `POST /api/v1/public/choice-confirmations` with `{ booking_id, intent_id }` – moves an intent to the confirmed list

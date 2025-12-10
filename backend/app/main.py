@@ -24,20 +24,37 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Static voyage + theme configuration for the MVP.
-TRIP_CONFIG = {
-    "external_trip_id": "HEL-TLL-2025-12-12",
-    "speed_min_kn": 18.0,
-    "speed_max_kn": 22.0,
-    "speed_default_kn": 21.0,
-    "max_reduction_pct": 20,
-    "theme": {
-        "font_family": "Inter, system-ui",
-        "primary_color": "#10b981",
-        "danger_color": "#ef4444",
-        "bg_color": "#ffffff",
-        "text_color": "#0f172a",
-        "radius_px": 16,
+# Static voyage + theme configuration for the MVP (multiple trips).
+TRIP_CONFIGS: Dict[str, Dict] = {
+    "HEL-TLL-2025-12-12": {
+        "external_trip_id": "HEL-TLL-2025-12-12",
+        "speed_min_kn": 18.0,
+        "speed_max_kn": 22.0,
+        "speed_default_kn": 21.0,
+        "max_reduction_pct": 20,
+        "theme": {
+            "font_family": "Inter, system-ui",
+            "primary_color": "#10b981",
+            "danger_color": "#ef4444",
+            "bg_color": "#ffffff",
+            "text_color": "#0f172a",
+            "radius_px": 16,
+        },
+    },
+    "VAA-UME-2025-12-15": {
+        "external_trip_id": "VAA-UME-2025-12-15",
+        "speed_min_kn": 16.0,
+        "speed_max_kn": 21.0,
+        "speed_default_kn": 19.5,
+        "max_reduction_pct": 18,
+        "theme": {
+            "font_family": """'Trebuchet MS', 'Segoe UI', system-ui""",
+            "primary_color": "#2563eb",  # blue variant
+            "danger_color": "#e11d48",   # rose
+            "bg_color": "#f8fafc",       # light slate
+            "text_color": "#0f172a",
+            "radius_px": 12,
+        },
     },
 }
 
@@ -100,17 +117,15 @@ def health() -> Dict[str, str]:
 
 @app.get("/api/v1/public/widget/config", response_model=WidgetConfigResponse)
 def get_widget_config(external_trip_id: str = Query(..., alias="external_trip_id")):
-    if external_trip_id != TRIP_CONFIG["external_trip_id"]:
-        raise HTTPException(status_code=404, detail="Trip not found")
-    return TRIP_CONFIG
+    trip = _get_trip_config(external_trip_id)
+    return trip
 
 
 @app.post("/api/v1/public/choice-intents", response_model=ChoiceIntentResponse)
 def create_choice_intent(payload: ChoiceIntentRequest):
-    if payload.external_trip_id != TRIP_CONFIG["external_trip_id"]:
-        raise HTTPException(status_code=404, detail="Trip not found")
+    _get_trip_config(payload.external_trip_id)
 
-    max_reduction = float(TRIP_CONFIG["max_reduction_pct"])
+    max_reduction = float(TRIP_CONFIGS[payload.external_trip_id]["max_reduction_pct"])
     if payload.reduction_pct < 0 or payload.reduction_pct > max_reduction:
         raise HTTPException(status_code=400, detail="Reduction out of bounds")
 
@@ -168,3 +183,10 @@ def _resolve_widget_path() -> Path:
     # backend/app/main.py -> backend -> widget-script-test -> widget/dist/widget.js
     root_dir = Path(__file__).resolve().parents[2]
     return root_dir / "widget" / "dist" / "widget.js"
+
+
+def _get_trip_config(external_trip_id: str) -> Dict:
+    trip = TRIP_CONFIGS.get(external_trip_id)
+    if not trip:
+        raise HTTPException(status_code=404, detail="Trip not found")
+    return trip
