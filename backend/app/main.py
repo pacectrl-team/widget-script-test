@@ -38,7 +38,7 @@ TRIP_CONFIGS: Dict[str, Dict] = {
             "danger_color": "#ef4444",
             "bg_color": "#ffffff",
             "text_color": "#0f172a",
-            "radius_px": 16,
+            "radius_px": 18,
         },
     },
     "VAA-UME-2025-12-15": {
@@ -51,9 +51,9 @@ TRIP_CONFIGS: Dict[str, Dict] = {
             "font_family": """'Trebuchet MS', 'Segoe UI', system-ui""",
             "primary_color": "#2563eb",  # blue variant
             "danger_color": "#e11d48",   # rose
-            "bg_color": "#f8fafc",       # light slate
-            "text_color": "#0f172a",
-            "radius_px": 12,
+            "bg_color": "#b8dcff",       # light slate
+            "text_color": "#420003",
+            "radius_px": 0,
         },
     },
 }
