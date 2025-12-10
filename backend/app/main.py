@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 import random
 import string
 from pathlib import Path
@@ -125,6 +125,8 @@ def get_widget_config(external_trip_id: str = Query(..., alias="external_trip_id
 def create_choice_intent(payload: ChoiceIntentRequest):
     _get_trip_config(payload.external_trip_id)
 
+    _prune_stale_intents()
+
     max_reduction = float(TRIP_CONFIGS[payload.external_trip_id]["max_reduction_pct"])
     if payload.reduction_pct < 0 or payload.reduction_pct > max_reduction:
         raise HTTPException(status_code=400, detail="Reduction out of bounds")
@@ -141,6 +143,8 @@ def create_choice_intent(payload: ChoiceIntentRequest):
 
 @app.post("/api/v1/public/choice-confirmations", response_model=ChoiceConfirmationRecord)
 def confirm_choice(payload: ChoiceConfirmationRequest):
+    _prune_stale_intents()
+
     intent = INTENT_STORE.pop(payload.intent_id, None)
     if not intent:
         raise HTTPException(status_code=404, detail="Intent not found")
@@ -158,6 +162,7 @@ def confirm_choice(payload: ChoiceConfirmationRequest):
 
 @app.get("/api/v1/admin/choice-intents", response_model=List[ChoiceIntentRecord])
 def list_choice_intents():
+    _prune_stale_intents()
     return sorted(INTENT_STORE.values(), key=lambda intent: intent["created_at"], reverse=True)
 
 
@@ -190,3 +195,21 @@ def _get_trip_config(external_trip_id: str) -> Dict:
     if not trip:
         raise HTTPException(status_code=404, detail="Trip not found")
     return trip
+
+
+def _prune_stale_intents(max_age_minutes: int = 15) -> None:
+    cutoff = datetime.utcnow() - timedelta(minutes=max_age_minutes)
+    stale_ids = []
+    for intent_id, intent in INTENT_STORE.items():
+        created_str = intent.get("created_at")
+        if not created_str:
+            continue
+        try:
+            created_dt = datetime.fromisoformat(created_str.replace("Z", "+00:00"))
+        except ValueError:
+            continue
+        if created_dt < cutoff:
+            stale_ids.append(intent_id)
+
+    for intent_id in stale_ids:
+        INTENT_STORE.pop(intent_id, None)
