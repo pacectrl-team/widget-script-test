@@ -1,0 +1,17 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  background: #f6fbfa;
+}
+
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  color: #0f172a;
+  background: #f6fbfa;
+}
+
+code {
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+}
