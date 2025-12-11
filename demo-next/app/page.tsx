@@ -38,7 +38,7 @@ const trips = [
 
 export default function Page() {
   const [selectedTrip, setSelectedTrip] = useState(trips[0].id);
-  const [speedKn, setSpeedKn] = useState(20);
+  const [speedKn, setSpeedKn] = useState(17);
   const [intents, setIntents] = useState<Intent[]>([]);
   const [confirmations, setConfirmations] = useState<Confirmation[]>([]);
   const [averages, setAverages] = useState<TripAverage[]>([]);
@@ -114,6 +114,15 @@ export default function Page() {
 
   const sumBar = (value: number, max: number) => `${Math.min(Math.max(value / max, 0), 1) * 100}%`;
   const sentimentMaxPct = 20;
+  const surveyMaxPct = 15;
+  const surveyScenarios = [
+    { label: 'Overnight ferry to Germany', value: 9.25, labelLines: ['Overnight ferry', 'to Germany'] },
+    { label: 'Stockholm weekend getaway', value: 4.7, labelLines: ['Stockholm weekend', 'getaway'] },
+    { label: 'Tallinn daytrip', value: 10.3, labelLines: ['Tallinn', 'daytrip'] },
+    { label: 'Tankar Lighthouse overnight', value: 14.5, labelLines: ['Tankar Lighthouse', 'overnight'] },
+    { label: 'Sunday night home to Vaasa', value: 1.37, labelLines: ['Sunday night home', 'to Vaasa'] },
+    { label: 'Winter evening to Tallinn', value: 10.3, labelLines: ['Winter evening', 'to Tallinn'] },
+  ];
 
   const minSpeed = 0;
   const maxSpeed = 20;
@@ -123,7 +132,7 @@ export default function Page() {
   const emissionPct = Math.pow(normalizedSpeed / typicalSpeed, 3) * 100;
 
   const scaleX = (s: number) => 50 + ((s - minSpeed) / (maxSpeed - minSpeed)) * 320;
-  const scaleY = (e: number) => 300 - (e / 100) * 220;
+  const scaleY = (e: number) => 380 - (e / 100) * 260;
 
   const curvePath = useMemo(() => {
     const steps = 20;
@@ -178,10 +187,10 @@ export default function Page() {
                 <span className="font-semibold">{normalizedSpeed.toFixed(1)} kn · {emissionPct.toFixed(0)}% vs typical</span>
               </div>
               <div className="text-xs text-slate-600 mb-2">Emissions ∝ (speed³). Even a small nudge left drops fuel burn fast.</div>
-              <svg viewBox="0 0 420 360" className="w-full h-96">
-                <rect x="0" y="0" width="420" height="360" fill="white" rx="12" />
-                <line x1="50" y1="300" x2="370" y2="300" stroke="#94a3b8" strokeWidth="1" />
-                <line x1="50" y1="60" x2="50" y2="300" stroke="#94a3b8" strokeWidth="1" />
+              <svg viewBox="0 0 420 460" className="w-full h-[34rem] sm:h-[28rem]">
+                <rect x="0" y="0" width="420" height="460" fill="white" rx="12" />
+                <line x1="50" y1="380" x2="370" y2="380" stroke="#94a3b8" strokeWidth="1" />
+                <line x1="50" y1="80" x2="50" y2="380" stroke="#94a3b8" strokeWidth="1" />
                 {[0, 25, 50, 75, 100].map((e) => (
                   <g key={e}>
                     <line x1="44" y1={scaleY(e)} x2="50" y2={scaleY(e)} stroke="#94a3b8" strokeWidth="1" />
@@ -190,11 +199,29 @@ export default function Page() {
                 ))}
                 {[0, 5, 10, 15, 20].map((s) => (
                   <g key={s}>
-                    <line x1={scaleX(s)} y1="300" x2={scaleX(s)} y2="306" stroke="#94a3b8" strokeWidth="1" />
-                    <text x={scaleX(s) - 6} y="322" fontSize="10" fill="#475569">{s}</text>
+                    <line x1={scaleX(s)} y1="380" x2={scaleX(s)} y2="386" stroke="#94a3b8" strokeWidth="1" />
+                    <text x={scaleX(s) - 6} y="402" fontSize="10" fill="#475569">{s}</text>
                   </g>
                 ))}
                 <path d={curvePath} fill="none" stroke="#0b7a57" strokeWidth="3" />
+                <line
+                  x1={scaleX(normalizedSpeed)}
+                  y1={scaleY(emissionPct)}
+                  x2="50"
+                  y2={scaleY(emissionPct)}
+                  stroke="#cbd5e1"
+                  strokeWidth="1"
+                  strokeDasharray="4 4"
+                />
+                <line
+                  x1={scaleX(typicalSpeed)}
+                  y1={scaleY(100)}
+                  x2="50"
+                  y2={scaleY(100)}
+                  stroke="#cbd5e1"
+                  strokeWidth="1"
+                  strokeDasharray="4 4"
+                />
                 <circle cx={scaleX(normalizedSpeed)} cy={scaleY(emissionPct)} r="7" fill="#0b7a57" />
                 <text x={scaleX(normalizedSpeed) + 8} y={scaleY(emissionPct) - 8} fontSize="11" fill="#0b7a57">You</text>
                 <circle cx={scaleX(typicalSpeed)} cy={scaleY(100)} r="7" fill="#0ea5e9" />
@@ -324,7 +351,7 @@ export default function Page() {
           <div className="bg-white border border-foamDark/40 rounded-2xl p-6 shadow-card">
             <h3 className="text-lg font-semibold">Intents (live)</h3>
             <p className="text-slate-600 text-sm mb-3">Updates in real time from the SSE feed.</p>
-            <div className="overflow-auto">
+            <div className="overflow-auto max-h-72">
               <table className="w-full text-sm">
                 <thead className="text-left text-slate-500">
                   <tr><th className="py-1">Intent</th><th>Trip</th><th>Reduction %</th><th>Created</th></tr>
@@ -348,7 +375,7 @@ export default function Page() {
           <div className="bg-white border border-foamDark/40 rounded-2xl p-6 shadow-card">
             <h3 className="text-lg font-semibold">Confirmed choices (live)</h3>
             <p className="text-slate-600 text-sm mb-3">Also streams from the same SSE channel.</p>
-            <div className="overflow-auto">
+            <div className="overflow-auto max-h-72">
               <table className="w-full text-sm">
                 <thead className="text-left text-slate-500">
                   <tr><th className="py-1">Booking</th><th>Intent</th><th>Trip</th><th>Reduction %</th><th>Confirmed</th></tr>
@@ -419,11 +446,79 @@ export default function Page() {
         </section>
 
         <section className="bg-white border border-foamDark/40 rounded-2xl p-6 shadow-card space-y-3">
-          <h3 className="text-xl font-semibold">Guardrails and ops</h3>
+          <h3 className="text-xl font-semibold">What people picked in our scenario form</h3>
+          <p className="text-slate-700">We gathered feedback via a simple form where people could see different trip setups and pick how much they would be willing to slow down the ferry for each.
+            We got in total 25 responses.</p>
+          <p className="text-slate-700">
+            Scenarios included short daytrips, weekend getaways, and overnight ferries. People could pick from about +10% (boat sped up) to -20% (quite a bit slower).
+            On average, people were willing to shave a few percent off speed.</p>
+          <a
+            className="text-tide font-semibold underline"
+            href="https://pacectrl-widgets.netlify.app/"
+            target="_blank"
+            rel="noreferrer"
+          >
+            Try the form yourself ↗
+          </a>
+          <div className="bg-foam rounded-xl border border-foamDark/60 p-4">
+            <div className="overflow-x-auto">
+              <svg viewBox="0 0 760 420" className="min-w-[640px] w-[720px] max-w-none h-96">
+              <rect x="0" y="0" width="760" height="420" fill="white" rx="12" />
+              <line x1="100" y1="60" x2="100" y2="340" stroke="#94a3b8" strokeWidth="1" />
+              <line x1="100" y1="340" x2="700" y2="340" stroke="#94a3b8" strokeWidth="1" />
+              {[0, 5, 10, 15].map((tick) => {
+                const y = 340 - (tick / surveyMaxPct) * 240;
+                return (
+                  <g key={tick}>
+                    <line x1="96" y1={y} x2="100" y2={y} stroke="#94a3b8" strokeWidth="1" />
+                    <text x="80" y={y + 4} fontSize="10" fill="#475569" textAnchor="end">{tick}%</text>
+                  </g>
+                );
+              })}
+              {surveyScenarios.map((s, idx) => {
+                const capped = Math.min(s.value, surveyMaxPct);
+                const band = 600 / Math.max(surveyScenarios.length, 1);
+                const barWidth = Math.max(band * 0.5, 48);
+                const x = 100 + band * idx + (band - barWidth) / 2;
+                const barH = (capped / surveyMaxPct) * 240;
+                const y = 340 - barH;
+                const labelX = x + barWidth / 2;
+                return (
+                  <g key={s.label}>
+                    <rect x={x} y={y} width={barWidth} height={barH} rx="6" fill="#0b7a57" />
+                    <text x={labelX} y={y - 8} fontSize="11" fill="#0b7a57" textAnchor="middle">{capped.toFixed(2)}%</text>
+                    <text x={labelX} y="358" fontSize="10" fill="#475569" textAnchor="middle">
+                      {s.labelLines.map((line, i) => (
+                        <tspan key={line} x={labelX} dy={i === 0 ? 0 : 12}>{line}</tspan>
+                      ))}
+                    </text>
+                  </g>
+                );
+              })}
+              </svg>
+            </div>
+          </div>
+        </section>
+
+        <section className="bg-white border border-foamDark/40 rounded-2xl p-6 shadow-card space-y-3">
+          <h3 className="text-xl font-semibold">What we've done so far, and what needs to be done</h3>
+          <ul className="list-disc list-inside text-slate-700 space-y-2">
+            <li>Gathered initial passenger feedback on multiple scenarios.</li>
+            <li>Discussed feasibility and operational concerns with Wasaline.</li>
+            <li>Started implementing backend and frontend; MVP backend is live for demo use.</li>
+            <li>MVP backend is intentionally a dummy (no auth) for this demo.</li>
+            <li>Planned the database structure, but it is not yet implemented.</li>
+            <li>First version of frontend, backend and a dummy database is hosted on railway. But nothing worth showing yet. Hence this demo site only.</li>
+          </ul>
+          <p className="text-slate-700 text-sm">MVP backend with API endpoints: <a className="text-tide underline font-semibold" href="https://widget-script-test-production.up.railway.app/docs" target="_blank" rel="noreferrer">https://widget-script-test-production.up.railway.app/docs</a></p>
+        </section>
+
+        <section className="bg-white border border-foamDark/40 rounded-2xl p-6 shadow-card space-y-3">
+          <h3 className="text-xl font-semibold">Guardrails</h3>
           <ul className="list-disc list-inside text-slate-700 space-y-2">
             <li>Captains always decide final speed; the widget only reflects passenger preference.</li>
             <li>Max/min reductions stay within operator-set bounds per trip.</li>
-            <li>PaceCtrl Portal (ops) lets operators manage trips, set limits, and view aggregated data. Still to be implemented</li>
+            <li>PaceCtrl Portal lets operators manage trips, set limits, and view aggregated data. Still to be implemented</li>
             <li>Transport-heavy routes (lorries and stuff) are out of scope; tourism sailings are the sweet spot. This is something we learned after having a meeting with Wasaline.</li>
           </ul>
         </section>
