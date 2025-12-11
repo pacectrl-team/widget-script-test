@@ -1,3 +1,5 @@
+import asyncio
+import json
 from datetime import datetime, timedelta, timezone
 import random
 import string
@@ -8,6 +10,7 @@ from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
 app = FastAPI(title="PaceCtrl MVP", version="0.1.0")
@@ -61,6 +64,7 @@ TRIP_CONFIGS: Dict[str, Dict] = {
 # In-memory store for choice intents. Suitable for testing only.
 INTENT_STORE: Dict[str, Dict] = {}
 CONFIRMED_CHOICES: List[Dict] = []
+STREAM_SUBSCRIBERS: List[asyncio.Queue] = []
 
 
 class ThemeConfig(BaseModel):
@@ -143,6 +147,7 @@ def create_choice_intent(payload: ChoiceIntentRequest):
         "reduction_pct": payload.reduction_pct,
         "created_at": datetime.utcnow().isoformat() + "Z",
     }
+    _broadcast_state()
     return {"intent_id": intent_id}
 
 
@@ -160,6 +165,7 @@ def confirm_choice(payload: ChoiceConfirmationRequest):
         "confirmed_at": datetime.utcnow().isoformat() + "Z",
     }
     CONFIRMED_CHOICES.append(record)
+    _broadcast_state()
     return record
 
 
@@ -184,6 +190,25 @@ def get_trip_average(external_trip_id: str = Query(..., alias="external_trip_id"
         "count": count,
         "average_reduction_pct": round(avg, 3),
     }
+
+
+@app.get("/api/v1/admin/stream")
+async def stream_state():
+    async def event_generator():
+        queue: asyncio.Queue = asyncio.Queue()
+        STREAM_SUBSCRIBERS.append(queue)
+        try:
+            await queue.put(_current_state_snapshot())
+            while True:
+                data = await queue.get()
+                yield f"data: {json.dumps(data)}\n\n"
+        except asyncio.CancelledError:
+            raise
+        finally:
+            if queue in STREAM_SUBSCRIBERS:
+                STREAM_SUBSCRIBERS.remove(queue)
+
+    return StreamingResponse(event_generator(), media_type="text/event-stream")
 
 
 @app.get("/widget.js")
@@ -226,3 +251,53 @@ def _prune_old_intents(max_age_minutes: int = 15) -> None:
 
     for key in stale_keys:
         INTENT_STORE.pop(key, None)
+
+    if stale_keys:
+        _broadcast_state()
+
+
+def _broadcast_state() -> None:
+    if not STREAM_SUBSCRIBERS:
+        return
+    snapshot = _current_state_snapshot()
+    for queue in list(STREAM_SUBSCRIBERS):
+        try:
+            queue.put_nowait(snapshot)
+        except Exception:
+            # If a subscriber is misbehaving, drop it quietly for this MVP.
+            try:
+                STREAM_SUBSCRIBERS.remove(queue)
+            except ValueError:
+                pass
+
+
+def _current_state_snapshot() -> Dict:
+    intents = sorted(INTENT_STORE.values(), key=lambda intent: intent["created_at"], reverse=True)
+    confirmations = sorted(CONFIRMED_CHOICES, key=lambda record: record["confirmed_at"], reverse=True)
+    return {
+        "intents": intents,
+        "confirmations": confirmations,
+        "trip_averages": _aggregate_by_trip(confirmations),
+    }
+
+
+def _aggregate_by_trip(confirmations: List[Dict]) -> List[Dict]:
+    aggregates: Dict[str, Dict] = {}
+    for record in confirmations:
+        trip_id = record.get("external_trip_id")
+        if not trip_id:
+            continue
+        agg = aggregates.setdefault(trip_id, {"external_trip_id": trip_id, "count": 0, "average_reduction_pct": 0.0})
+        agg["count"] += 1
+        # Incremental mean
+        agg["average_reduction_pct"] += (record.get("reduction_pct", 0.0) - agg["average_reduction_pct"]) / agg["count"]
+
+    # round for readability
+    return [
+        {
+            "external_trip_id": v["external_trip_id"],
+            "count": v["count"],
+            "average_reduction_pct": round(v["average_reduction_pct"], 3),
+        }
+        for v in aggregates.values()
+    ]
