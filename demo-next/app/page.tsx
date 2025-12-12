@@ -153,7 +153,7 @@ export default function Page() {
           <h1 className="text-3xl sm:text-4xl font-semibold">Since we can't be there with you right now…</h1>
           <p className="text-foamDark text-lg max-w-3xl">
             We decided to set up a site that explains what we are trying to solve, what we are building, and lets you experience it live.
-            The site tries to simulate the full experience of PaceCtrl in action during a ferry booking.
+            The site tries to simulate the full experience of PaceCtrl in action during a ferry booking
           </p>
           <p className="text-foamDark text-lg max-w-3xl">
             This site now uses API calls to fetch min/max speed values, shows a working widget, streams live intents and confirmations,
