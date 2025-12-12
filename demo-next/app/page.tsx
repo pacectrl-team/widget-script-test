@@ -404,7 +404,9 @@ export default function Page() {
             <div>
               <p className="text-sm uppercase tracking-wide text-kelp font-semibold">Trip sentiment</p>
               <h3 className="text-xl font-semibold">Live averages per trip</h3>
-              <p className="text-slate-600 text-sm">This is what people have voted during the pitching event on 12th of December 2025.</p>
+              <p className="text-slate-600 text-sm">This is just to mimic the behaviour we wish to have in the actual PaceCtrl operator portal. 
+                So if you go above to the "slider" you can click "Pay & confirm" to send a booking confirmation. Then these bars below will be updated live. If there are no confirmations yet, you'll see a message instead of the chart. 
+                This is the average of what people have voted during the pitching event on 12th of December 2025.</p>
             </div>
             <div className="text-slate-600 text-sm">Chart updates as confirmations arrive.</div>
           </div>
